@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,29 @@ public class VehicleController {
     @Autowired
     public VehicleController(VehicleService vehicleService) {
         this.vehicleService = vehicleService;
+    }
+
+    // --- CREATE --- (only admin)
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Vehicle> addVehicle(@RequestBody Vehicle vehicle) {
+        try {
+            Vehicle savedVehicle = vehicleService.save(vehicle);
+            log.info("Vehicle created with ID: {}", savedVehicle.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedVehicle); // 201
+        } catch (Exception e) {
+            log.error("Error while saving vehicle", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // 500
+        }
+    }
+
+    // --- SOFT DELETE --- (only admin)
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteVehicle(@PathVariable String id) {
+        log.info("Soft deleting vehicle with ID: {}", id);
+        vehicleService.deleteById(id);
+        return ResponseEntity.noContent().build(); // 204
     }
 
     // --- READ ALL ---
@@ -58,56 +82,4 @@ public class VehicleController {
         log.info("Fetching all rented vehicles");
         return vehicleService.findRentedVehicles();
     }
-
-    // --- CREATE ---
-    @PostMapping
-    public ResponseEntity<Vehicle> addVehicle(@RequestBody Vehicle vehicle) {
-        try {
-            Vehicle savedVehicle = vehicleService.save(vehicle);
-            log.info("Vehicle created with ID: {}", savedVehicle.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedVehicle); // 201
-        } catch (Exception e) {
-            log.error("Error while saving vehicle", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // 500
-        }
-    }
-
-//    fetch("http://localhost:8080/api/vehicles", {
-//        method: "POST",
-//                headers: { "Content-Type": "application/json" },
-//        body: JSON.stringify({
-//                id: "567",
-//                category: "Car",
-//                brand: "Toyota",
-//                model: "Corolla",
-//                year: 2015,
-//                price: 200,
-//                plate: "ABC123",
-//                isActive: true
-//  })
-//    })
-//            .then(response => response.json())
-//            .then(data => console.log(data))
-//            .catch(error => console.error(error));
-
-
-    // --- SOFT DELETE ---
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteVehicle(@PathVariable String id) {
-        log.info("Soft deleting vehicle with ID: {}", id);
-        vehicleService.deleteById(id);
-        return ResponseEntity.noContent().build(); // 204
-    }
-
-//    fetch("http://localhost:8080/api/vehicles/567", {  // 567 = vehicle ID
-//        method: "DELETE"
-//    })
-//            .then(response => {
-//        if (response.status === 204) {
-//            console.log("Vehicle deleted successfully!");
-//        } else {
-//            console.log("Delete failed with status:", response.status);
-//        }
-//    })
-//            .catch(error => console.error(error));
 }
