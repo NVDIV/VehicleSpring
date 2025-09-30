@@ -3,6 +3,7 @@ package com.example.Vehicles.service;
 import com.example.Vehicles.model.User;
 import com.example.Vehicles.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,17 +19,20 @@ public class MyUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Wyszukamy użytkownika po polu 'login'
         User user = userRepository.findByLogin(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User" + username + " doesn't exist"));
-        // Zbudujemy obiekt UserDetails na podstawie danych encji User
-        // Tworzymy listę Grantów (autoryzacji) z roli użytkownika:
-        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.getRole()));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (!user.isActive()) {
+            throw new DisabledException("User is deactivated");
+        }
 
         return new org.springframework.security.core.userdetails.User(
                 user.getLogin(),
                 user.getPassword(),
-                authorities
+                user.getRoles().stream()
+                        .map(r -> new SimpleGrantedAuthority(r.getName()))
+                        .toList()
         );
     }
+
 }

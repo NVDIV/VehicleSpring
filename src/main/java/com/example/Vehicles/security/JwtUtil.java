@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtUtil {
@@ -31,7 +33,7 @@ public class JwtUtil {
                 .subject(userDetails.getUsername())
                 .issuedAt(now)
                 .expiration(expirationDate)
-                .claim("role", getUserRole(userDetails)) // dodajemy rolę usera
+                .claim("role", getUserRoles(userDetails)) // dodajemy rolę usera
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -69,11 +71,11 @@ public class JwtUtil {
 // HMAC to metoda szyfrowania, która wykorzystuje funkcję skrótu (np. SHA-256) i klucz tajny do generowania podpisu
     }
 
-    private String getUserRole(UserDetails userDetails) { //Zwraca role usera
+    private List<String> getUserRoles (UserDetails
+                                               userDetails){
         return userDetails.getAuthorities().stream()
-                .findFirst()
                 .map(GrantedAuthority::getAuthority)
-                .orElse(null);
+                .collect(Collectors.toList());
     }
 
     public String extractRole(String token) {

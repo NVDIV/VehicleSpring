@@ -2,7 +2,9 @@ package com.example.Vehicles.controller;
 
 import com.example.Vehicles.dto.LoginRequest;
 import com.example.Vehicles.dto.LoginResponse;
+import com.example.Vehicles.dto.UserRequest;
 import com.example.Vehicles.security.JwtUtil;
+import com.example.Vehicles.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final UserService userService;
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
         // 1. Uwierzytelnienie użytkownika za pomocą podanego loginu i hasła
@@ -43,4 +47,19 @@ public class AuthController {
         LoginResponse responseBody = new LoginResponse(token);
         return ResponseEntity.ok(responseBody);
     }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody UserRequest req) {
+        try {
+            userService.register(req);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body("Registered successfully");
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(ex.getMessage());
+        }
+    }
+
 }
